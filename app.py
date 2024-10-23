@@ -3,6 +3,7 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 
+
 # Load environment variables
 load_dotenv()
 DB_CONNECTION_STRING = os.getenv("DB_CONNECTION_STRING")
