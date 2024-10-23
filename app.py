@@ -3,10 +3,10 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 
-
 # Load environment variables
 load_dotenv()
 DB_CONNECTION_STRING = os.getenv("DB_CONNECTION_STRING")
+PORT = int(os.getenv("PORT", 5000))  # Use the PORT environment variable, default to 5000
 
 app = Flask(__name__)
 
@@ -26,12 +26,11 @@ def get_news():
     # Use a SQL query to filter results based on the search query
     if search_query:
         cursor.execute("""
-    SELECT title, link, date, description, source 
-    FROM news 
-    WHERE title ~* %s
-    ORDER BY created_at DESC;
-""", (f'\\y{search_query}\\y',))  # \\y denotes word boundaries
-
+            SELECT title, link, date, description, source 
+            FROM news 
+            WHERE title ~* %s
+            ORDER BY created_at DESC;
+        """, (f'\\y{search_query}\\y',))  # \\y denotes word boundaries
     else:
         cursor.execute("SELECT title, link, date, description, source FROM news ORDER BY created_at DESC;")
         
@@ -54,4 +53,5 @@ def get_news():
     return jsonify(news_list)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Bind to the PORT environment variable
+    app.run(host='0.0.0.0', port=PORT, debug=True)
