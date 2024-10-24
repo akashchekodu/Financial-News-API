@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS  # Import CORS
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -9,6 +10,9 @@ DB_CONNECTION_STRING = os.getenv("DB_CONNECTION_STRING")
 PORT = int(os.getenv("PORT", 5000))  # Use the PORT environment variable, default to 5000
 
 app = Flask(__name__)
+
+# Enable CORS for all routes
+CORS(app)  # This will enable CORS for all routes and origins
 
 # Database connection
 def get_db_connection():
