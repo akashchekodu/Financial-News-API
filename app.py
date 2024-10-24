@@ -24,20 +24,47 @@ def get_news():
     # Get the search query parameter
     search_query = request.args.get('search', default='', type=str)
     
+    # Get the source filter parameter
+    source_filter = request.args.get('source', default='', type=str)
+    
+    # Get pagination parameters
+    page = request.args.get('page', default=1, type=int)
+    limit = request.args.get('limit', default=10, type=int)
+
+    # Calculate the offset for pagination
+    offset = (page - 1) * limit
+
     connection = get_db_connection()
     cursor = connection.cursor()
     
-    # Use a SQL query to filter results based on the search query
+    # Use a SQL query to filter results based on the search query and source
+    sql_query = """
+        SELECT title, link, date, description, source 
+        FROM news 
+        WHERE TRUE
+    """
+    
+    query_conditions = []
+    params = []
+
+    # Add conditions based on the search query
     if search_query:
-        cursor.execute("""
-            SELECT title, link, date, description, source 
-            FROM news 
-            WHERE title ~* %s
-            ORDER BY created_at DESC;
-        """, (f'\\y{search_query}\\y',))  # \\y denotes word boundaries
-    else:
-        cursor.execute("SELECT title, link, date, description, source FROM news ORDER BY created_at DESC;")
-        
+        query_conditions.append("title ~* %s")
+        params.append(f'\\y{search_query}\\y')  # \\y denotes word boundaries
+
+    # Add conditions based on the source filter
+    if source_filter:
+        query_conditions.append("source = %s")
+        params.append(source_filter)
+
+    # Combine conditions into the final SQL query
+    if query_conditions:
+        sql_query += " AND " + " AND ".join(query_conditions)
+
+    sql_query += " ORDER BY created_at DESC LIMIT %s OFFSET %s;"
+    params.extend([limit, offset])  # Add limit and offset to parameters
+
+    cursor.execute(sql_query, params)
     news_items = cursor.fetchall()
     
     cursor.close()
@@ -54,7 +81,12 @@ def get_news():
             'source': item[4]
         })
 
-    return jsonify(news_list)
+    # Return the results along with pagination information
+    return jsonify({
+        'page': page,
+        'limit': limit,
+        'news': news_list
+    })
 
 if __name__ == '__main__':
     # Bind to the PORT environment variable
